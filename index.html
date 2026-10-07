@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Service Queue Optimization System</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div>
+            <h1>Smart Service Queue</h1>
+            <p>Smart Service Queue Optimization System</p>
+        </div>
+    </header>
+
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- Dashboard Cards -->
+        <section class="dashboard">
+
+            <div class="card">
+                <h3>Total Customers</h3>
+                <p id="totalCustomers">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Waiting Customers</h3>
+                <p id="waitingCustomers">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Served Customers</h3>
+                <p id="servedCustomers">0</p>
+            </div>
+
+        </section>
+
+
+        <!-- Add Customer -->
+        <section class="box">
+
+            <h2>Add Customer to Queue</h2>
+
+            <form>
+
+                <div class="form-group">
+                    <label>Customer Name</label>
+
+                    <input
+                        type="text"
+                        placeholder="Enter customer name"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label>Service Type</label>
+
+                    <select required>
+                        <option value="">Select Service</option>
+                        <option value="Banking">Banking</option>
+                        <option value="Loan">Loan</option>
+                        <option value="Account">Account</option>
+                        <option value="Customer Support">
+                            Customer Support
+                        </option>
+                    </select>
+                </div>
+
+
+                <div class="form-group">
+                    <label>Priority</label>
+
+                    <select required>
+                        <option value="">Select Priority</option>
+                        <option value="3">High</option>
+                        <option value="2">Medium</option>
+                        <option value="1">Low</option>
+                    </select>
+                </div>
+
+
+                <button type="submit">
+                    Add Customer
+                </button>
+
+            </form>
+
+        </section>
+
+
+
+
+        <!-- Search Customer -->
+<section class="box">
+
+    <h2>Search Customer</h2>
+
+    <div class="search-box">
+
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Enter customer name"
+        >
+
+        <button type="button" id="searchButton">
+            Search
+        </button>
+
+    </div>
+
+    <p id="searchResult"></p>
+
+</section>
+
+
+
+
+
+
+        <!-- Current Queue -->
+        <section class="box">
+
+            <div class="section-title">
+
+                <h2>Current Queue</h2>
+
+                <span class="status">
+                    Queue Active
+                </span>
+
+            </div>
+
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Customer ID</th>
+                        <th>Customer Name</th>
+                        <th>Service</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                    
+                </tbody>
+
+            </table>
+
+        </section>
+        
+
+        <!-- Served Customer History -->
+<section class="box">
+
+    <div class="section-title">
+        <h2>Served Customer History</h2>
+
+        <span class="status">
+            Completed
+        </span>
+    </div>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Customer ID</th>
+                <th>Customer Name</th>
+                <th>Service</th>
+                <th>Priority</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody id="servedTableBody">
+
+        </tbody>
+
+    </table>
+
+</section>
+
+
+
+
+
+        <!-- Now Serving -->
+        <section class="box serve">
+
+            <h2>Now Serving</h2>
+
+            <div class="customer">
+
+                <p class="customer-label">
+                    Current Customer
+                </p>
+
+                <h3>No Customer Being Served</h3>
+
+                <p>
+                    Click the button below to serve the next customer.
+                </p>
+
+            </div>
+
+            <button class="serve-button">
+                Serve Next Customer
+            </button>
+
+        </section>
+
+
+        <!-- Project Information -->
+        <section class="box">
+
+            <h2>Queue Optimization</h2>
+
+            <div class="info">
+
+                <div>
+                    <h3>Priority Based</h3>
+                    <p>
+                        High priority customers are served first.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>Fast Service</h3>
+                    <p>
+                        The system reduces unnecessary waiting time.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>C++ Queue</h3>
+                    <p>
+                        Queue management is implemented using C++.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            Smart Service Queue Optimization System
+        </p>
+
+        <p>
+            Developed using C++ | HTML | CSS
+        </p>
+
+    </footer>
+     <script src="script.js"></script>
+
+</body>
+
+</html>
