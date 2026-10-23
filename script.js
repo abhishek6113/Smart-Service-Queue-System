@@ -4,11 +4,28 @@
 
 
 // Customer data
-let customers = [];
 
-let servedCustomers = [];
+const STORAGE_KEY = "smartServiceQueueData";
 
-let customerId = 1;
+const savedData = JSON.parse(
+    localStorage.getItem(STORAGE_KEY) || "null"
+);
+
+let customers = savedData?.customers || [];
+let servedCustomers = savedData?.servedCustomers || [];
+let customerId = savedData?.customerId || 1;
+
+function saveData() {
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+            customers,
+            servedCustomers,
+            customerId
+        })
+    );
+}
+
 
 
 // ==========================================
@@ -115,6 +132,7 @@ form.addEventListener("submit", function(event)
     customers.push(customer);
 
     customerId++;
+    saveData();
 
 
     // Sort by priority
@@ -123,6 +141,7 @@ form.addEventListener("submit", function(event)
     {
         return b.priority - a.priority;
     });
+    saveData();
 
 
     // Update screen
@@ -330,6 +349,8 @@ serveButton.addEventListener(
         servedCustomers.push(
             customer
         );
+
+        saveData();
 
 
         // Show current customer
@@ -554,3 +575,4 @@ updateQueue();
 updateServedHistory();
 
 updateDashboard();
+console.log("Smart Service Queue JavaScript is working!");
