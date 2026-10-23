@@ -1,198 +1,174 @@
+
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <winsock2.h>
-
-#pragma comment(lib, "ws2_32.lib")
+#include <sstream>
+#include <iterator>
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <signal.h>
 
 using namespace std;
 
-string readHTML()
+string readFile(const string& filename)
 {
-    ifstream file("index.html");
+    ifstream file(filename, ios::binary);
+    if (!file.is_open()) return "";
 
-    if (!file.is_open())
-    {
-        return
-            "<html>"
-            "<body>"
-            "<h1>Error</h1>"
-            "<p>index.html file not found!</p>"
-            "</body>"
-            "</html>";
-    }
-
-    string html;
-    string line;
-
-    while (getline(file, line))
-    {
-        html += line;
-        html += "\n";
-    }
-
-    file.close();
-
-    return html;
+    return string(
+        (istreambuf_iterator<char>(file)),
+        istreambuf_iterator<char>()
+    );
 }
 
+bool sendAll(int client, const string& data)
+{
+    size_t sent = 0;
+
+    while (sent < data.size())
+    {
+        ssize_t n = send(
+            client, data.data() + sent,
+            data.size() - sent, 0
+        );
+
+        if (n <= 0) return false;
+        sent += n;
+    }
+
+    return true;
+}
 
 int main()
 {
-    WSADATA wsaData;
+    signal(SIGPIPE, SIG_IGN);
 
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    const char* envPort = getenv("PORT");
+    int port = envPort ? atoi(envPort) : 8080;
+
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket < 0)
     {
-        cout << "Winsock initialization failed!" << endl;
+        cerr << "Socket creation failed\n";
         return 1;
     }
 
+    int opt = 1;
+    setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR,
+               &opt, sizeof(opt));
 
-    SOCKET serverSocket = socket(
-        AF_INET,
-        SOCK_STREAM,
-        IPPROTO_TCP
-    );
+    sockaddr_in address{};
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
 
-
-    if (serverSocket == INVALID_SOCKET)
+    if (bind(serverSocket, (sockaddr*)&address,
+             sizeof(address)) < 0)
     {
-        cout << "Socket creation failed!" << endl;
-        WSACleanup();
+        perror("Bind failed");
+        close(serverSocket);
         return 1;
     }
 
-
-    sockaddr_in serverAddress{};
-
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr =
-        inet_addr("127.0.0.1");
-
-    serverAddress.sin_port =
-        htons(8080);
-
-
-    if (bind(
-        serverSocket,
-        (sockaddr*)&serverAddress,
-        sizeof(serverAddress)
-    ) == SOCKET_ERROR)
+    if (listen(serverSocket, 10) < 0)
     {
-        cout << "Bind failed! Error: "
-             << WSAGetLastError()
-             << endl;
-
-        closesocket(serverSocket);
-        WSACleanup();
-
+        perror("Listen failed");
+        close(serverSocket);
         return 1;
     }
 
-
-    if (listen(serverSocket, 5) == SOCKET_ERROR)
-    {
-        cout << "Listen failed!" << endl;
-
-        closesocket(serverSocket);
-        WSACleanup();
-
-        return 1;
-    }
-
-
-    cout << "====================================" << endl;
-    cout << " SMART SERVICE QUEUE SERVER" << endl;
-    cout << "====================================" << endl;
-
-    cout << "Server started successfully!" << endl;
-
-    cout << "Open:" << endl;
-    cout << "http://127.0.0.1:8080" << endl;
-
-    cout << "Waiting for browser..." << endl;
-
+    cout << "Smart Service Queue Server running on port "
+         << port << endl;
 
     while (true)
     {
-        SOCKET clientSocket = accept(
-            serverSocket,
-            nullptr,
-            nullptr
+        int client = accept(serverSocket, nullptr, nullptr);
+        if (client < 0) continue;
+
+        char buffer[4096]{};
+        ssize_t received = recv(
+            client, buffer, sizeof(buffer) - 1, 0
         );
 
-
-        if (clientSocket == INVALID_SOCKET)
+        if (received <= 0)
         {
-            cout << "Client connection failed!"
-                 << endl;
-
+            close(client);
             continue;
         }
 
-
-        cout << "Client connected!" << endl;
-
-
-        char buffer[4096];
-
-
-        int bytesReceived = recv(
-            clientSocket,
-            buffer,
-            sizeof(buffer) - 1,
-            0
+        istringstream requestStream(
+            string(buffer, received)
         );
 
+        string method, path, version;
+        requestStream >> method >> path >> version;
 
-        if (bytesReceived > 0)
+        size_t query = path.find('?');
+        if (query != string::npos)
+            path = path.substr(0, query);
+
+        string filename, contentType;
+
+        if (method == "GET" &&
+            (path == "/" || path == "/index.html"))
         {
-            buffer[bytesReceived] = '\0';
-
-            cout << "Request received."
-                 << endl;
+            filename = "index.html";
+            contentType = "text/html; charset=UTF-8";
+        }
+        else if (method == "GET" && path == "/style.css")
+        {
+            filename = "style.css";
+            contentType = "text/css; charset=UTF-8";
+        }
+        else if (method == "GET" && path == "/script.js")
+        {
+            filename = "script.js";
+            contentType = "application/javascript; charset=UTF-8";
         }
 
+        string body, status;
 
-        // Read actual index.html
-
-        string html = readHTML();
-
+        if (filename.empty())
+        {
+            status = "404 Not Found";
+            body = "404 Not Found";
+            contentType = "text/plain; charset=UTF-8";
+        }
+        else
+        {
+            ifstream check(filename, ios::binary);
+            if (!check.is_open())
+            {
+                status = "404 Not Found";
+                body = "File not found: " + filename;
+                contentType = "text/plain; charset=UTF-8";
+            }
+            else
+            {
+                check.close();
+                body = readFile(filename);
+                status = "200 OK";
+            }
+        }
 
         string response =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html; charset=UTF-8\r\n"
-            "Content-Length: "
-            + to_string(html.length())
-            + "\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            + html;
+            "HTTP/1.1 " + status + "\r\n" +
+            "Content-Type: " + contentType + "\r\n" +
+            "Content-Length: " + to_string(body.size()) + "\r\n" +
+            "Connection: close\r\n\r\n" + body;
 
+        sendAll(client, response);
 
-        send(
-            clientSocket,
-            response.c_str(),
-            static_cast<int>(response.length()),
-            0
-        );
+        cout << method << " " << path
+             << " -> " << status << endl;
 
-
-        cout << "index.html sent successfully."
-             << endl;
-
-
-        closesocket(clientSocket);
-
-
-        cout << "Waiting for next client..."
-             << endl;
+        close(client);
     }
 
-
-    closesocket(serverSocket);
-
-    WSACleanup();
-
+    close(serverSocket);
     return 0;
 }
